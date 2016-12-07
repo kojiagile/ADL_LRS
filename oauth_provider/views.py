@@ -25,37 +25,48 @@ from models import Token
 OAUTH_AUTHORIZE_VIEW = 'OAUTH_AUTHORIZE_VIEW'
 OAUTH_CALLBACK_VIEW = 'OAUTH_CALLBACK_VIEW'
 
-UNSAFE_REDIRECTS = getattr(settings, "OAUTH_UNSAFE_REDIRECTS", False)
+UNSAFE_REDIRECTS = getattr(settings, "OAUTH_UNSAFE_REDIRECTS", True)
 
 
 @csrf_exempt
 def request_token(request):
     oauth_request = get_oauth_request(request)
+
+    print 'got oauth request: %s' % oauth_request
+
+    print 'Checking request params'
     if oauth_request is None:
         return HttpResponseBadRequest('Invalid request parameters.')
+
+    print 'oauth_callback in req?: %s' % oauth_request
 
     missing_params = require_params(oauth_request, ('oauth_callback',))
     if missing_params is not None:
         return missing_params
 
+    print 'Checking request'
     if is_xauth_request(oauth_request):
         return HttpResponseBadRequest('xAuth not allowed for this method.')
 
+    print 'Trying for consumer'
     try:
         consumer = store.get_consumer(
             request, oauth_request, oauth_request['oauth_consumer_key'])
     except InvalidConsumerError:
         return HttpResponse('Invalid consumer.', status=401)
 
+    print 'Verifying oauth request'
     if not verify_oauth_request(request, oauth_request, consumer):
         return HttpResponseBadRequest('Could not verify OAuth request.')
 
+    print 'Getting req token'
     try:
         request_token = store.create_request_token(
             request, oauth_request, consumer, oauth_request['oauth_callback'])
     except oauth.Error:
         return HttpResponse('Invalid request token: %s' % oauth_request.get_parameter('oauth_token'), status=401)
 
+    print 'Got it.. returning.'
     ret = urlencode({
         'oauth_token': request_token.key,
         'oauth_token_secret': request_token.secret,
@@ -89,11 +100,21 @@ def user_authorization(request, form_class=AuthorizeRequestTokenForm):
         request, oauth_request, request_token)
 
     # LRS CHANGE - MAKE SURE LOGGED IN USER OWNS THIS CONSUMER
-    if request.user != consumer.user:
+    # CLATOOLKIT CHANGE - MULTIPLE USERS CAN HAVE MULTIPLE CONSUMERS
+    if not consumer.attached_to_user(request.user):
         return HttpResponseForbidden('Invalid user for this client.')
 
     if request.method == 'POST':
         form = form_class(request.POST)
+        print 'request.session.oauth == request_token.key? %s' % (request.session.get('oauth','') == request_token.key)
+
+        print 'session: %s and request_token: %s' % (request.session.get('oauth',''),request_token.key)
+
+        print 'form valid? %s' % form.is_valid()
+
+        if not form.is_valid():
+            print 'form errors: %s' % form.errors
+
         if request.session.get('oauth', '') == request_token.key and form.is_valid():
             request.session['oauth'] = ''
             if form.cleaned_data['authorize_access']:
@@ -102,6 +123,8 @@ def user_authorization(request, form_class=AuthorizeRequestTokenForm):
                 args = {'oauth_token': request_token.key}
             else:
                 args = {'error': _('Access not granted by user.')}
+
+            print 'callback url: %s' % (request_token.callback)
             if request_token.callback is not None and request_token.callback != OUT_OF_BAND:
                 callback_url = request_token.get_callback_url(args)
                 if UNSAFE_REDIRECTS:

@@ -2,6 +2,7 @@ import json
 import urllib
 
 from django.contrib.auth import logout, login, authenticate
+from django.contrib.auth.views import password_change
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib.sites.shortcuts import get_current_site
@@ -15,7 +16,7 @@ from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.http import require_http_methods
 
 from .forms import ValidatorForm, RegisterForm, RegClientForm, HookRegistrationForm
-from .models import Hook
+from .models import Hook, TempAccount
 
 from lrs.exceptions import ParamError
 from lrs.models import Statement, Verb, Agent, Activity, StatementAttachment, ActivityState
@@ -25,6 +26,7 @@ from lrs.utils.authorization import non_xapi_auth
 
 from oauth_provider.consts import ACCEPTED, CONSUMER_STATES
 from oauth_provider.models import Consumer, Token
+
 
 
 @csrf_protect
@@ -64,6 +66,100 @@ def stmt_validator(request):
                     validator.data, indent=4, sort_keys=True)
                 return render(request, 'validator.html', {"form": form, "valid_message": valid, "clean_data": clean_data})
     return render(request, 'validator.html', {"form": form})
+
+@csrf_protect
+@require_http_methods(["POST"])
+def claregister(request):
+
+    email = request.POST.get('email', None)
+
+    if email:
+        # Checking if username or email
+        try: #email
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            return HttpResponse('User not found')
+
+        # Login User and redirect for PW change
+        user.backend = 'django.contrib.auth.backends.ModelBackend'
+        login(request, user)
+
+
+
+
+@csrf_protect
+@require_http_methods(["POST"])
+def cla_password_change(request):
+    password = request.POST.get('password', None)
+    password_confirm = request.POST.get('password_confirm', None)
+    user  = request.user
+
+    if password and password_confirm:
+        if password == password_confirm:
+            user.set_password(password)
+
+            # Delete Temp account indicating the user account is setup with their nominated password
+            TempAccount.objects.get(user=user).delete()
+
+            return HttpResponseRedirect(reverse('home'))
+
+        else:
+            return render(request, 'temp-account_password_change.html', {'error':'Passwords do not match.'})
+    else:
+        return render(request, 'temp-account_password_change.html', {'error':'Enter your password twice'})
+
+
+
+
+
+@require_http_methods(["POST"])
+def clatoolkit_setup_user(request):
+
+    def check_request(signature, client_app):
+        from hashlib import sha1
+        import hmac
+        import binascii
+
+        #cla_sumer = Consumer.objects.get(name="CLAToolkit")
+
+        hash = hmac.new(str(client_app.secret), client_app.key, sha1)
+
+        this_sig = binascii.b2a_base64(hash.digest())[:-1]
+
+        return this_sig == signature
+
+    if request.POST.get('mailbox', None) and request.POST.get('user', None) \
+            and request.POST.get('signature', None) and request.POST.get('client', None):
+
+        user = request.POST.get('user')
+        email = request.POST.get('mailbox')
+        consumer = Consumer.objects.get(name__exact=request.POST.get('client'))
+
+        if check_request(request.POST.get('signature'), consumer):
+
+            #print 'USER IS ::::: %s' % (user)
+
+            if not User.objects.filter(username__exact=user).count():
+
+                if not User.objects.filter(email__exact=email).count():
+
+                    # Generate Temporary Password
+                    pw = User.objects.make_random_password()
+
+                    user = User.objects.create_user(user, email, pw)
+
+                    # Noting that this user was auto-generated, logging in
+                    # will trigger password reset (thus deleting temp acc)
+                    TempAccount(user=user).save()
+
+                    return HttpResponse('success')
+                else:
+                    HttpResponse('Email already exists')
+            else:
+                HttpResponse('Username already exists')
+
+    pass
+
 
 
 @csrf_protect
@@ -127,7 +223,23 @@ def admin_attachments(request, path):
 @require_http_methods(["POST", "GET"])
 def regclient(request):
     if request.method == 'GET':
+
+        #CLATOOLKIT CHANGE - Multiple OAuth Client Apps can be connected to multiple users
+        if 'add_client' in request.GET:
+
+            client = Consumer.objects.get(id=request.GET.get('add_client'))
+            client.users.add(request.user)
+
+            info_msg = "Secrets are given once off to the creator of the Client-App, should you need" \
+                       " access to the secret key for some reason, please email us."
+
+            d = {"name": client.name, "app_id": client.key, "secret": info_msg,
+                 "rsa": "None", "info_message": "Your Client Credentials"}
+
+            return render(request, 'reg_success.html', d)
+
         form = RegClientForm()
+
         return render(request, 'regclient.html', {"form": form})
     elif request.method == 'POST':
         form = RegClientForm(request.POST)
@@ -140,12 +252,16 @@ def regclient(request):
             try:
                 client = Consumer.objects.get(name__exact=name)
             except Consumer.DoesNotExist:
-                client = Consumer.objects.create(name=name, description=description, user=request.user,
+                client = Consumer.objects.create(name=name, description=description, owner=request.user,
                                                  status=ACCEPTED, secret=secret, rsa_signature=rsa_signature)
             else:
                 return render(request, 'regclient.html', {"form": form, "error_message": "Client %s already exists." % name})
 
+            # Note: client.generate_random_codes() also saves the model
             client.generate_random_codes()
+
+            client.users.add(request.user)
+
             d = {"name": client.name, "app_id": client.key, "secret": client.secret,
                  "rsa": client.rsa_signature, "info_message": "Your Client Credentials"}
             return render(request, 'reg_success.html', d)
@@ -226,13 +342,25 @@ def my_activity_state(request):
 @login_required()
 @require_http_methods(["GET"])
 def me(request, template='me.html'):
-    client_apps = Consumer.objects.filter(user=request.user)
+    client_apps = Consumer.objects.filter(users=request.user)
+
+    # print "CLIENT APPS FOR USER %s: %s" % (request.user.username, client_apps) TODO: Remove
+
     access_tokens = Token.objects.filter(
         user=request.user, token_type=Token.ACCESS, is_approved=True)
 
+    clients = Consumer.objects.all()
+
+    # Excluding all Clients that a user has attached to their account
+    # so we don't add them again (above)
+    clients = clients.exclude(users=request.user)
+
+    print "CLIENTS for client_reg: %s" % (clients)
+
     context = {
         'client_apps': client_apps,
-        'access_tokens': access_tokens
+        'access_tokens': access_tokens,
+        'existing_clients': clients
     }
     return render(request, template, context)
 

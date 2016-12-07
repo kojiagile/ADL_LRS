@@ -108,4 +108,6 @@ class ModelStore(Store):
             token_key=oauth_request.get('oauth_token', ''),
             key=nonce, timestamp=timestamp,
         )
+
+        print 'created? %s' % created
         return created

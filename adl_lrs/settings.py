@@ -12,22 +12,22 @@ DEBUG = True
 # Set these email values to send the reset password link
 # If you do not want this functionality just comment out the
 # Forgot Password? link in templates/registration/login.html
-EMAIL_HOST = '<email_host>'
-EMAIL_PORT = 465
-EMAIL_HOST_USER = '<email_host_user>'
-EMAIL_HOST_PASSWORD = '<email_host_user_password>'
-EMAIL_USE_SSL = True
-EMAIL_TIMEOUT = 10
+#EMAIL_HOST = '<email_host>'
+#EMAIL_PORT = 465
+#EMAIL_HOST_USER = '<email_host_user>'
+#EMAIL_HOST_PASSWORD = '<email_host_user_password>'
+#EMAIL_USE_SSL = True
+#EMAIL_TIMEOUT = 10
 
 
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'lrs',
-        'USER': '<db_owner_name>',
-        'PASSWORD': '<db_owner_password>',
+        'USER': '',
+        'PASSWORD': '',
         'HOST': 'localhost',
-        'PORT': '',
+        'PORT': '5432',
     }
 }
 
@@ -114,6 +114,7 @@ AUTH_USER_MODEL = "auth.User"
 OAUTH_AUTHORIZE_VIEW = 'oauth_provider.views.authorize_client'
 OAUTH_CALLBACK_VIEW = 'oauth_provider.views.callback_view'
 OAUTH_SIGNATURE_METHODS = ['plaintext', 'hmac-sha1', 'rsa-sha1']
+OAUTH_NONCE_VALID_PERIOD = 1000000
 
 # THIS IS OAUTH2 STUFF
 STATE = 1

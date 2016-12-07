@@ -36,3 +36,7 @@ class Hook(models.Model):
     def to_dict(self):
         return {'id': self.hook_id, 'name': self.name, 'config': self.config, 'filters': self.filters,
                 'created_at': self.created_at.isoformat(), 'updated_at': self.updated_at.isoformat()}
+
+
+class TempAccount(models.Model):
+    user = models.ForeignKey(User, null=False)

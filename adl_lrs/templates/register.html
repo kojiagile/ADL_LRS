@@ -9,7 +9,7 @@
 <div class="content">
     <div class="pure-g">
       <div class="l-box pure-u-1 pure-u-md-1-3 pure-u-lg-1-3"></div>
-      <div class="l-box pure-u-1 pure-u-md-1-3 pure-u-lg-1-3">
+      <div class="l-box pure-u-1-2 pure-u-md-1-3 pure-u-lg-1-3">
         <h3 class="content-subhead">User Registration</h3>
         <p>
            Registration is used to enable HTTP Basic Authentication. Without using secure sockets (SSL), this authentication scheme is likely not secure enough for most production systems. Please do not register using sensitive names and passwords. Assume all data provided here is public. After you register a user, you can use the HTTP_AUTHORIZATION header with your encoded username and password.
@@ -38,6 +38,22 @@
                       <input id="{{ field.auto_id }}" name="{{ field.html_name }}" class="pure-input" type="password" placeholder="Your Password" required>
                     {% endif %}
                   {% endfor %}
+                  <button type="submit" class="pure-button pure-button-primary">Sign Up</button>
+              </fieldset>
+          </form>
+      </div>
+      <div class="l-box pure-u-1-2 pure-u-md-1-3 pure-u-lg-1-3">
+          <h3 class="content-subhead">Existing CLAToolkit Users</h3>
+          <p>
+              If you have a CLAToolkit account, all you need to register is your email address or username from the CLAToolkit.
+          </p>
+
+          <form class="pure-form pure-form-stacked" action="{% url 'claregister' %}" method="post">
+              <fieldset>
+                  <label for="clauser">Username or E-mail</label>
+                  <input id="clauser" name="clauser" class="pure-input" type="text"
+                          placeholder="Your CLAToolkit username or email" required>
+
                   <button type="submit" class="pure-button pure-button-primary">Sign Up</button>
               </fieldset>
           </form>

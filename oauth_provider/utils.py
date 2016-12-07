@@ -104,8 +104,12 @@ def verify_oauth_request(request, oauth_request, consumer, token=None):
     from store import store
 
     # Check nonce
+    #print 'Nonce: %s' % store.check_nonce(request, oauth_request, oauth_request['oauth_nonce'], oauth_request['oauth_timestamp'])
     if not store.check_nonce(request, oauth_request, oauth_request['oauth_nonce'], oauth_request['oauth_timestamp']):
+        #print 'nonce check fail'
         return False
+
+    print 'Nonce: true'
 
     # Verify request
     try:
@@ -121,8 +125,11 @@ def verify_oauth_request(request, oauth_request, consumer, token=None):
             token = oauth.Token(token.key.encode(
                 'ascii', 'ignore'), token.secret.encode('ascii', 'ignore'))
 
+        print 'normalized parameters: %s' % oauth_request.get_normalized_parameters()
+
         oauth_server.verify_request(oauth_request, consumer, token)
-    except oauth.Error:
+    except oauth.Error as o:
+        print o.message
         return False
 
     return True

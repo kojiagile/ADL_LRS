@@ -7,6 +7,8 @@ import oauth2 as oauth
 from Crypto.PublicKey import RSA
 from django.db import models
 
+from django.contrib.auth.models import User
+
 from oauth_provider.compat import AUTH_USER_MODEL, get_random_string
 from oauth_provider.managers import TokenManager
 from oauth_provider.consts import KEY_SIZE, RSA_SECRET_SIZE, CONSUMER_KEY_SIZE, CONSUMER_STATES,\
@@ -55,11 +57,24 @@ class Consumer(models.Model):
     rsa_signature = models.BooleanField(default=False)
 
     status = models.SmallIntegerField(choices=CONSUMER_STATES, default=PENDING)
-    user = models.ForeignKey(AUTH_USER_MODEL, null=True, blank=True)
+
+    owner = models.ForeignKey(AUTH_USER_MODEL, null=True, blank=True, related_name="owner")
+    users = models.ManyToManyField(User)
+
     xauth_allowed = models.BooleanField("Allow xAuth", default=False)
 
     def __unicode__(self):
         return u"Consumer %s with key %s" % (self.name, self.key)
+
+    # CLATOOLKIT CHANGE - Consumer should be able to be connected to multiple lrs accounts
+    # Returns boolean user in user_set
+    def attached_to_user(self, user):
+        print "USER: %s" % user
+        print
+        print "Consumer user_set: %s" % (self.users.all())
+        print
+        print "User in users: %s" % (user in self.users.all())
+        return user in self.users.all()
 
     def generate_random_codes(self):
         """

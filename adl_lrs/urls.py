@@ -9,6 +9,10 @@ from django.contrib import admin
 admin.autodiscover()
 
 urlpatterns = [
+    # clatoolkit user generation endpoint
+    url(r'regclatoolkitu/$', views.clatoolkit_setup_user, name='regclatoolkitu'),
+    url(r'clalogin/$', views.claregister, name='clalogin'),
+
     # xapi endpoints
     url(r'^XAPI/', include('lrs.urls', namespace='lrs')),
     url(r'^xapi/', include('lrs.urls', namespace='lrs')),

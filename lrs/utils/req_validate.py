@@ -207,6 +207,9 @@ def statements_get(req_dict):
 @auth
 def statements_put(req_dict):
     # Find any unexpected parameters
+    print 'Finding params: %s' % req_dict
+    print
+
     rogueparams = set(req_dict['params']) - set(["statementId"])
     if rogueparams:
         raise ParamError(

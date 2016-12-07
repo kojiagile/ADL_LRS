@@ -43,18 +43,28 @@
             </div>
             <div id="clientapps" class="content">
                 <h2>OAuth Client Apps</h2>
-                <a class="pure-button" href="{% url 'regclient' %}">Add</a>
+
+                {% if existing_clients.count > 0 %}
+                    <div class="">
+                        {% for client in existing_clients %}
+                            <a href="{% url 'regclient' %}?add_client={{client.id}}">{{client.name}}</a></br>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <a class="pure-button" href="{% url 'regclient' %}">Add New Client App</a>
+
                 {% if client_apps %}
                     <div class="email-item">
                         {% for app in client_apps %}
                             <div class="pure-u appdiv">
-                                <h5 class="email-name"><span class="appname">{{ app.name }}</span> --- <a class="change_app_status" href='#'>{% if app.status == 2 %}Deactivate{% else %}Activate{% endif %}</a></h5>
+                                <h5 class="email-name"><span class="appname">{{ app.name }}</span> {% if app.owner == request.user %} --- <a class="change_app_status" href='#'>{% if app.status == 2 %}Deactivate{% else %}Activate{% endif %}</a>{% endif %}</h5>
                                 <h4 class="email-subject {% if app.get_status_display == 'Accepted' %}formvalid
                                                          {% elif app.get_status_display == 'Canceled' %}errorlist
                                                          {% endif %}">{{ app.get_status_display }}</h4>
                                 <p class="email-desc">
                                     <strong>Key</strong>: {{ app.key }}<br>
-                                    <strong>Secret</strong>: {% if not app.rsa_signature %}{{ app.secret }}{% else %}Your RSA key pair{% endif %}<br>
+                                   {% if request.user == app.owner %} <strong>Secret</strong>: {% if not app.rsa_signature %}{{ app.secret }}{% else %}Your RSA key pair{% endif %}<br>{% endif %}
                                 </p>
                             </div>
                         {% endfor %}
