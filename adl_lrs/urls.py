@@ -45,6 +45,7 @@ urlpatterns = [
 
     url(r'^regclient', views.regclient, name='regclient'),
     url(r'^register', views.register, name='register'),
+    url(r'^claregister', views.claregister, name='claregister'),
 
     url(r'^reset/password_reset/$', auth_views.password_reset, name='reset_password_reset'),
     url(r'^reset/password_reset/done/$', auth_views.password_reset_done, name='password_reset_done'),
