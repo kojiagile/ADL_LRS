@@ -112,8 +112,13 @@ def get_user_from_auth(auth):
             if member.account_name:
                 key = member.account_name
                 break
-        user = Consumer.objects.get(key__exact=key).user
-    return user
+
+        client_app = Consumer.objects.get(key__exact=key)
+        user = client_app.users.all()
+
+        print user
+        
+    return user[0]
 
 
 def validate_oauth_scope(req_dict):
@@ -248,6 +253,7 @@ def oauth_helper(request):
     ]
     kwargs = {"objectType": "Group", "member": members,
               "oauth_identifier": "anongroup:%s-%s" % (consumer.key, user_email)}
+
     # create/get oauth group and set in dictionary
     oauth_group, created = Agent.objects.oauth_group(**kwargs)
     request['auth']['agent'] = oauth_group
