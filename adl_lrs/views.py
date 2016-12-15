@@ -85,8 +85,6 @@ def claregister(request):
         login(request, user)
 
 
-
-
 @csrf_protect
 @require_http_methods(["POST"])
 def cla_password_change(request):
@@ -123,9 +121,7 @@ def clatoolkit_setup_user(request):
         #cla_sumer = Consumer.objects.get(name="CLAToolkit")
 
         hash = hmac.new(str(client_app.secret), client_app.key, sha1)
-
         this_sig = binascii.b2a_base64(hash.digest())[:-1]
-
         return this_sig == signature
 
     if request.POST.get('mailbox', None) and request.POST.get('user', None) \
@@ -154,10 +150,11 @@ def clatoolkit_setup_user(request):
 
                     return HttpResponse('success')
                 else:
-                    HttpResponse('Email already exists')
+                    return HttpResponse('Email already exists')
             else:
-                HttpResponse('Username already exists')
-
+                return HttpResponse('Username already exists')
+        else:
+            return HttpResponse('signature did not match')
     pass
 
 

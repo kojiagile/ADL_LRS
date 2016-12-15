@@ -49,6 +49,7 @@
           </p>
 
           <form class="pure-form pure-form-stacked" action="{% url 'claregister' %}" method="post">
+              {% csrf_token %}
               <fieldset>
                   <label for="clauser">Username or E-mail</label>
                   <input id="clauser" name="clauser" class="pure-input" type="text"
