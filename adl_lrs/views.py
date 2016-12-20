@@ -106,7 +106,6 @@ def claregister(request):
                 if param.find('consumer_key') > -1:
                     consumer_key = param.split('=')[1]
 
-            # print 'consumer_key sent from cla toolkit = %s ' % consumer_key
             try:
                 # Add the user to consumer-user mapping table
                 # This has to be done before getting access token
@@ -136,6 +135,7 @@ def claregister(request):
         else:
             return render(request, 'registration/temp_account_password_change.html', {"form": form})
 
+
 @csrf_protect
 @require_http_methods(["POST"])
 def cla_password_change(request):
@@ -159,8 +159,6 @@ def cla_password_change(request):
 
 
 
-
-
 @require_http_methods(["POST"])
 def clatoolkit_setup_user(request):
 
@@ -178,8 +176,6 @@ def clatoolkit_setup_user(request):
     if request.POST.get('mailbox', None) and request.POST.get('user', None) \
             and request.POST.get('signature', None) and request.POST.get('client', None):
 
-        print request.POST.get('client')
-        
         user = request.POST.get('user')
         email = request.POST.get('mailbox')
         consumer = Consumer.objects.get(name__exact=request.POST.get('client'))
@@ -189,12 +185,9 @@ def clatoolkit_setup_user(request):
             #print 'USER IS ::::: %s' % (user)
 
             if not User.objects.filter(username__exact=user).count():
-
                 if not User.objects.filter(email__exact=email).count():
-
                     # Generate Temporary Password
                     pw = User.objects.make_random_password()
-
                     user = User.objects.create_user(user, email, pw)
 
                     # Noting that this user was auto-generated, logging in

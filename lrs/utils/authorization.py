@@ -109,16 +109,28 @@ def get_user_from_auth(auth):
     else:
         # it's a group.. gotta find out which of the 2 members is the client
         for member in auth.member.all():
+            # print "member.name   %s " % member.name
+            # print "member.account_name   %s " % member.account_name
+            # print "member.mbox   %s " % member.mbox
+            # print "member.objectType   %s " % member.objectType
+            # print '-----------------------------------------'
+            # member is Agent object.
+            if member.name:
+                username = member.name
             if member.account_name:
                 key = member.account_name
                 break
 
         client_app = Consumer.objects.get(key__exact=key)
-        user = client_app.users.all()
+        users = client_app.users.all()
+        user = users[0]
+        for u in users:
+            if u.username == username:
+                user = u
 
-        print user
-        
-    return user[0]
+        # print users
+        # print 'selected user = %s' % user.username
+    return user
 
 
 def validate_oauth_scope(req_dict):
@@ -228,6 +240,11 @@ def http_auth_helper(request):
 def oauth_helper(request):
     token = request['auth']['oauth_token']
     user = token.user
+    # print 'token === '
+    # print token
+    # print 'user === '
+    # print user.id
+
     user_name = user.username
     if user.email.startswith('mailto:'):
         user_email = user.email
