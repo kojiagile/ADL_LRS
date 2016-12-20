@@ -34,7 +34,9 @@
 
       <div class="l-box pure-u-1-2 pure-u-md-1-3 pure-u-lg-1-4">
           <h3 class="content-subhead">CLAToolkit User Login</h3>
-          <form class="pure-form pure-form-stacked" action="{% url 'clalogin' %}">
+          <form class="pure-form pure-form-stacked" method="POST" action="{% url 'clalogin' %}">
+            <input type="hidden" name="next" value="{{ request.GET.next }}">
+            {% csrf_token %}
               <fieldset>
                   <legend>Sign in with your email here if you are a <a href="http://clatoolkit.beyondlms.org">CLAToolkit user</a>, and you have not signed up previously</legend>
                     <label for="email">ClaToolkit E-mail</label>

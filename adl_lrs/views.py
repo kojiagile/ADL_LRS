@@ -15,7 +15,7 @@ from django.shortcuts import render
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.http import require_http_methods
 
-from .forms import ValidatorForm, RegisterForm, RegClientForm, HookRegistrationForm
+from .forms import ValidatorForm, RegisterForm, RegClientForm, HookRegistrationForm, TempUserPasswordSettingForm
 from .models import Hook, TempAccount
 
 from lrs.exceptions import ParamError
@@ -83,7 +83,58 @@ def claregister(request):
         # Login User and redirect for PW change
         user.backend = 'django.contrib.auth.backends.ModelBackend'
         login(request, user)
+        
+        form = TempUserPasswordSettingForm()
+        render_to = 'registration/temp_account_password_change.html'
+        param_next = request.POST.get('next')
+        return render(request, render_to, {"form": form, 'param_next': param_next})
 
+    elif request.method == 'POST':
+        form = TempUserPasswordSettingForm(request.POST)
+        if form.is_valid():
+            # Save user's password
+            password = form.cleaned_data['password']
+            param_next = request.POST.get('next')
+            # print "param_next   " + param_next
+            user = User.objects.get(id = request.user.id)
+            user.set_password(password)
+            user.save()
+
+            params = param_next.split('&')
+            consumer_key = ''
+            for param in params:
+                if param.find('consumer_key') > -1:
+                    consumer_key = param.split('=')[1]
+
+            # print 'consumer_key sent from cla toolkit = %s ' % consumer_key
+            try:
+                # Add the user to consumer-user mapping table
+                # This has to be done before getting access token
+                client = Consumer.objects.get(key = consumer_key)
+                client.users.add(user)
+            except Consumer.DoesNotExist:
+                for param in params:
+                    if param.find('oauth_callback') > -1:
+                        callback_url = param.split('=')[1]
+                        callback_url += '?status=fail'
+                        print 'Consumer was not found. Redirecting..... %s' % callback_url
+                        return HttpResponseRedirect(callback_url)
+
+            # Login User and redirect for PW change
+            user.backend = 'django.contrib.auth.backends.ModelBackend'
+            login(request, user)
+
+            # Delete Temp account indicating the user account is setup with their nominated password
+            try:
+                TempAccount.objects.get(user=user).delete()
+            except TempAccount.DoesNotExist:
+                pass
+
+            # Jump to 
+            return HttpResponseRedirect(param_next)
+
+        else:
+            return render(request, 'registration/temp_account_password_change.html', {"form": form})
 
 @csrf_protect
 @require_http_methods(["POST"])
@@ -127,6 +178,8 @@ def clatoolkit_setup_user(request):
     if request.POST.get('mailbox', None) and request.POST.get('user', None) \
             and request.POST.get('signature', None) and request.POST.get('client', None):
 
+        print request.POST.get('client')
+        
         user = request.POST.get('user')
         email = request.POST.get('mailbox')
         consumer = Consumer.objects.get(name__exact=request.POST.get('client'))

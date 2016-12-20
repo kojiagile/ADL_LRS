@@ -24,8 +24,8 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'lrs',
-        'USER': '',
-        'PASSWORD': '',
+        'USER': 'kojilrs',
+        'PASSWORD': 'clatoolkitdev123!',
         'HOST': 'localhost',
         'PORT': '5432',
     }
