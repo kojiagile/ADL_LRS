@@ -11,13 +11,20 @@ from django.core.urlresolvers import reverse
 from django.db.models import Q
 
 from . import convert_to_datetime_object
-from ..models import Statement, Agent
+from ..models import Statement, Agent, Verb
 from ..exceptions import NotFound
 
 
 def complex_get(param_dict, limit, language, format, attachments):
     # keep track if a filter other than time or sequence is used
     reffilter = False
+
+    # Test code
+    # param_dict['verb'] = "http://www.w3.org/ns/activitystreams#Create"
+    # param_dict['verb'] = "http://activitystrea.ms/schema/1.0/like"
+    print 'xapi filter param ===== '
+    print param_dict
+
 
     sinceQ = Q()
     if 'since' in param_dict:
@@ -96,6 +103,16 @@ def complex_get(param_dict, limit, language, format, attachments):
     if 'registration' in param_dict:
         reffilter = True
         registrationQ = Q(context_registration=param_dict['registration'])
+
+    # # Filter by course code
+    # courseQ = Q()
+    # if 'course' in param_dict:
+    #     # courseQ = Q(full_statement__contains={"id": "f81285dd-9d96-4ee7-acc4-a3ca56b07e92"})
+    #     course_code = param_dict['course_code']
+    #     course_filter = {"context": {"contextActivities": {"grouping": [{"definition": {"name": {"en-US": str(course_code)}}}]}}}
+    #     courseQ = Q(full_statement__contains=course_filter)
+
+    
     # If want ordered by ascending
     stored_param = '-stored'
     if 'ascending' in param_dict and param_dict['ascending']:
@@ -105,7 +122,32 @@ def complex_get(param_dict, limit, language, format, attachments):
     stmtset = Statement.objects.select_related('actor', 'verb', 'context_team', 'context_instructor', 'authority',
                                                'object_agent', 'object_activity', 'object_substatement') \
         .prefetch_related('context_ca_parent', 'context_ca_grouping', 'context_ca_category', 'context_ca_other') \
-        .filter(untilQ & sinceQ & authQ & agentQ & verbQ & activityQ & registrationQ).distinct()
+        .filter(untilQ & sinceQ & authQ & agentQ & verbQ & activityQ & registrationQ & courseQ).distinct()
+
+    # When verb count is required
+    if 'counttype' in param_dict:
+        from django.db.models import Count
+        obj_count_list = []
+        cont_type = param_dict['counttype']
+        if cont_type == 'platform':
+            # The column  name is different, so change it to correct one
+            cont_type = 'context_platform'
+
+        stmtset = stmtset.values(cont_type).annotate(count=Count(cont_type))
+        # print stmtset
+        for record in stmtset:
+            if cont_type == 'verb':
+                verb_obj = Verb.objects.get(id = record[cont_type])
+                # Set verb id (IRI)
+                record[cont_type] = verb_obj.verb_id
+            else:
+                record['platform'] = record['context_platform']
+                del record[cont_type]
+
+            obj_count_list.append(record)
+
+        return {param_dict['counttype']: obj_count_list}
+
     # Workaround since flat doesn't work with UUIDFields
     st_ids = stmtset.values_list('statement_id')
     stmtset = [st_id[0] for st_id in st_ids]
