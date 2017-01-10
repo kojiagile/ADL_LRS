@@ -104,15 +104,19 @@ def complex_get(param_dict, limit, language, format, attachments):
         reffilter = True
         registrationQ = Q(context_registration=param_dict['registration'])
 
-    # # Filter by course code
-    # courseQ = Q()
-    # if 'course' in param_dict:
-    #     # courseQ = Q(full_statement__contains={"id": "f81285dd-9d96-4ee7-acc4-a3ca56b07e92"})
-    #     course_code = param_dict['course_code']
-    #     course_filter = {"context": {"contextActivities": {"grouping": [{"definition": {"name": {"en-US": str(course_code)}}}]}}}
-    #     courseQ = Q(full_statement__contains=course_filter)
+    # Filter by course code
+    courseQ = Q()
+    if 'course' in param_dict:
+        # courseQ = Q(full_statement__contains={"id": "f81285dd-9d96-4ee7-acc4-a3ca56b07e92"})
+        course_code = param_dict['course']
+        course_filter = {"context": {"contextActivities": {"grouping": [{"definition": {"name": {"en-US": str(course_code)}}}]}}}
+        courseQ = Q(full_statement__contains=course_filter)
 
-    
+    # Filter by platform
+    platformQ = Q()
+    if 'platform' in param_dict:
+        platformQ = Q(context_platform = param_dict['platform'])
+
     # If want ordered by ascending
     stored_param = '-stored'
     if 'ascending' in param_dict and param_dict['ascending']:
