@@ -126,7 +126,7 @@ def complex_get(param_dict, limit, language, format, attachments):
     stmtset = Statement.objects.select_related('actor', 'verb', 'context_team', 'context_instructor', 'authority',
                                                'object_agent', 'object_activity', 'object_substatement') \
         .prefetch_related('context_ca_parent', 'context_ca_grouping', 'context_ca_category', 'context_ca_other') \
-        .filter(untilQ & sinceQ & authQ & agentQ & verbQ & activityQ & registrationQ & courseQ).distinct()
+        .filter(untilQ & sinceQ & authQ & agentQ & verbQ & activityQ & registrationQ & courseQ & platformQ).distinct()
 
     # When verb count is required
     if 'counttype' in param_dict:
