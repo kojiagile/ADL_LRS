@@ -104,18 +104,18 @@ def complex_get(param_dict, limit, language, format, attachments):
         reffilter = True
         registrationQ = Q(context_registration=param_dict['registration'])
 
-    # Filter by course code
-    courseQ = Q()
-    if 'course' in param_dict:
-        # courseQ = Q(full_statement__contains={"id": "f81285dd-9d96-4ee7-acc4-a3ca56b07e92"})
-        course_code = param_dict['course']
-        course_filter = {"context": {"contextActivities": {"grouping": [{"definition": {"name": {"en-US": str(course_code)}}}]}}}
-        courseQ = Q(full_statement__contains=course_filter)
+    # # Filter by course code
+    # courseQ = Q()
+    # if 'course' in param_dict:
+    #     # courseQ = Q(full_statement__contains={"id": "f81285dd-9d96-4ee7-acc4-a3ca56b07e92"})
+    #     course_code = param_dict['course']
+    #     course_filter = {"context": {"contextActivities": {"grouping": [{"definition": {"name": {"en-US": str(course_code)}}}]}}}
+    #     courseQ = Q(full_statement__contains=course_filter)
 
-    # Filter by platform
-    platformQ = Q()
-    if 'platform' in param_dict:
-        platformQ = Q(context_platform = param_dict['platform'])
+    # # Filter by platform
+    # platformQ = Q()
+    # if 'platform' in param_dict:
+    #     platformQ = Q(context_platform = param_dict['platform'])
 
     # If want ordered by ascending
     stored_param = '-stored'
@@ -126,31 +126,32 @@ def complex_get(param_dict, limit, language, format, attachments):
     stmtset = Statement.objects.select_related('actor', 'verb', 'context_team', 'context_instructor', 'authority',
                                                'object_agent', 'object_activity', 'object_substatement') \
         .prefetch_related('context_ca_parent', 'context_ca_grouping', 'context_ca_category', 'context_ca_other') \
-        .filter(untilQ & sinceQ & authQ & agentQ & verbQ & activityQ & registrationQ & courseQ & platformQ).distinct()
+        .filter(untilQ & sinceQ & authQ & agentQ & verbQ & activityQ & registrationQ).distinct()
+        # .filter(untilQ & sinceQ & authQ & agentQ & verbQ & activityQ & registrationQ & courseQ & platformQ).distinct()
 
-    # When verb count is required
-    if 'counttype' in param_dict:
-        from django.db.models import Count
-        obj_count_list = []
-        cont_type = param_dict['counttype']
-        if cont_type == 'platform':
-            # The column  name is different, so change it to correct one
-            cont_type = 'context_platform'
+    # # When verb count is required
+    # if 'counttype' in param_dict:
+    #     from django.db.models import Count
+    #     obj_count_list = []
+    #     cont_type = param_dict['counttype']
+    #     if cont_type == 'platform':
+    #         # The column  name is different, so change it to correct one
+    #         cont_type = 'context_platform'
 
-        stmtset = stmtset.values(cont_type).annotate(count=Count(cont_type))
-        # print stmtset
-        for record in stmtset:
-            if cont_type == 'verb':
-                verb_obj = Verb.objects.get(id = record[cont_type])
-                # Set verb id (IRI)
-                record[cont_type] = verb_obj.verb_id
-            else:
-                record['platform'] = record['context_platform']
-                del record[cont_type]
+    #     stmtset = stmtset.values(cont_type).annotate(count=Count(cont_type))
+    #     # print stmtset
+    #     for record in stmtset:
+    #         if cont_type == 'verb':
+    #             verb_obj = Verb.objects.get(id = record[cont_type])
+    #             # Set verb id (IRI)
+    #             record[cont_type] = verb_obj.verb_id
+    #         else:
+    #             record['platform'] = record['context_platform']
+    #             del record[cont_type]
 
-            obj_count_list.append(record)
+    #         obj_count_list.append(record)
 
-        return {param_dict['counttype']: obj_count_list}
+    #     return {param_dict['counttype']: obj_count_list}
 
     # Workaround since flat doesn't work with UUIDFields
     st_ids = stmtset.values_list('statement_id')
