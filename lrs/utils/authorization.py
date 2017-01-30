@@ -140,6 +140,14 @@ def get_user_from_auth(auth):
 def validate_oauth_scope(req_dict):
     method = req_dict['method']
     endpoint = req_dict['auth']['endpoint']
+
+    broken_endpoint = endpoint.split('/')
+
+    # Note: Bug fix - When client app accesses to statement/more/<more_id>
+    if len(broken_endpoint) == 4 and broken_endpoint[2] == 'more':
+       del broken_endpoint[-1] 
+       endpoint = '/'.join(broken_endpoint)
+
     token = req_dict['auth']['oauth_token']
     scopes = token.scope_to_list()
 
