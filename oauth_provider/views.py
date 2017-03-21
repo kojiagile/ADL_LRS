@@ -120,7 +120,7 @@ def user_authorization(request, form_class=AuthorizeRequestTokenForm):
             if form.cleaned_data['authorize_access']:
                 request_token = store.authorize_request_token(
                     request, oauth_request, request_token)
-                args = {'oauth_token': request_token.key}
+                args = {'oauth_token': request_token.key, 'user': request.GET.get('clau',None)}
             else:
                 args = {'error': _('Access not granted by user.')}
 
