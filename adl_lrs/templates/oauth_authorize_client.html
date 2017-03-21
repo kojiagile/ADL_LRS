@@ -27,11 +27,15 @@
                     <input id="name" type="text" value="{{ name }}" readonly>
                     <label for="description">Description</label>
                     <textarea id="description" name="description" class="pure-input-1" readonly>{{ description }}</textarea>
-                    <label>Scope</label>
+                    <label>Scope</label> ("statements/write" and "statements/read/mine" are sufficient for the CLA toolkit)
                     {% for scope in oauth_scopes %}
                           <label for="{{ scope.1 }}" class="pure-checkbox">{{ scope.1 }}
-                            <input id="{{ scope.1 }}" name="scopes" type="checkbox" value="{{ scope.1 }}">
-                          </label>                        
+                            {% if scope.1 != "statements/write" and scope.1 != "statements/read/mine" %}
+                                <input id="{{ scope.1 }}" name="scopes" type="checkbox" value="{{ scope.1 }}" disabled='disabled'>
+                            {% else %}
+                                <input id="{{ scope.1 }}" name="scopes" type="checkbox" value="{{ scope.1 }}">
+                            {% endif %}
+                          </label>
                     {% endfor %}
                     <input type='hidden' name="oauth_token" value="{{ oauth_token }}" />
                     <button type="submit" class="pure-button pure-button-primary">Register</button>

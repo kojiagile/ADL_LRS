@@ -133,7 +133,10 @@ def claregister(request):
             return HttpResponseRedirect(param_next)
 
         else:
-            return render(request, 'registration/temp_account_password_change.html', {"form": form})
+            # param_next must be passed to the template even when an error occurs.
+            return render(request, 'registration/temp_account_password_change.html', 
+                                    {"form": form, "param_next": request.POST.get('next')})
+
 
 
 @csrf_protect

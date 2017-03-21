@@ -132,7 +132,11 @@ def statements_post(req_dict):
     stmt_ids = [stmt_tup[0] for stmt_tup in stmt_responses]
     stmts_to_void = [str(stmt_tup[1])
                      for stmt_tup in stmt_responses if stmt_tup[1]]
-    check_activity_metadata.delay(stmt_ids)
+    try:
+        check_activity_metadata.delay(stmt_ids)
+    except Exception:
+        pass
+        
     if stmts_to_void:
         void_statements.delay(stmts_to_void)
     if settings.USE_HOOKS:
