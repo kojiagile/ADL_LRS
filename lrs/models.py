@@ -207,7 +207,7 @@ class Agent(models.Model):
         max_length=192, db_index=True, null=True, unique=True)
     member = models.ManyToManyField('self', related_name="agents")
     account_homePage = models.CharField(max_length=MAX_URL_LENGTH, null=True)
-    account_name = models.CharField(max_length=50, null=True)
+    account_name = models.CharField(max_length=100, null=True)
     user = models.OneToOneField(User, on_delete=models.SET_NULL, null=True)
     objects = AgentManager()
 

@@ -161,6 +161,7 @@ def statements_get(req_dict):
     rogueparams = set(req_dict['params']) - set(["statementId", "voidedStatementId", "agent", "verb", "activity", "registration",
                                                  "related_activities", "related_agents", "since",
                                                  "until", "limit", "format", "attachments", "ascending"])
+                                                 # "counttype", "course", "platform"])
     if rogueparams:
         raise ParamError(
             "The get statements request contained unexpected parameters: %s" % ", ".join(rogueparams))

@@ -114,13 +114,17 @@ def get_user_from_auth(auth):
             # print "member.mbox   %s " % member.mbox
             # print "member.objectType   %s " % member.objectType
             # print '-----------------------------------------'
-            # member is Agent object.
-            if member.name:
-                username = member.name
+            # # member is Agent object.
+            # if member.name:
+            #     username = member.name
             if member.account_name:
                 key = member.account_name
                 break
 
+        for member in auth.member.all():
+            if member.name:
+                username = member.name
+                    
         client_app = Consumer.objects.get(key__exact=key)
         users = client_app.users.all()
         user = users[0]
@@ -136,6 +140,14 @@ def get_user_from_auth(auth):
 def validate_oauth_scope(req_dict):
     method = req_dict['method']
     endpoint = req_dict['auth']['endpoint']
+
+    broken_endpoint = endpoint.split('/')
+
+    # Note: Bug fix - When client app accesses to statement/more/<more_id>
+    if len(broken_endpoint) == 4 and broken_endpoint[2] == 'more':
+       del broken_endpoint[-1] 
+       endpoint = '/'.join(broken_endpoint)
+
     token = req_dict['auth']['oauth_token']
     scopes = token.scope_to_list()
 
@@ -274,5 +286,7 @@ def oauth_helper(request):
     # create/get oauth group and set in dictionary
     oauth_group, created = Agent.objects.oauth_group(**kwargs)
     request['auth']['agent'] = oauth_group
+    # Why do we need to call get_user_from_auth() to get user object when 
+    # we can get it from User class (filter by user.id)?
     request['auth']['user'] = get_user_from_auth(oauth_group)
     validate_oauth_scope(request)
